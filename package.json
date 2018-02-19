@@ -1,0 +1,25 @@
+{
+  "name": "krot",
+  "version": "1.0.0",
+  "description": "A way to view and measure your kubernetes rot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "krot": "./bin/krot"
+  },
+  "keywords": [
+    "kubernetes",
+    "maintenance"
+  ],
+  "author": "Yolean",
+  "license": "ISC",
+  "dependencies": {
+    "easy-table": "1.1.1",
+    "moment": "2.20.1",
+    "promptly": "3.0.3",
+    "rc": "1.2.5"
+  },
+  "devDependencies": {}
+}
