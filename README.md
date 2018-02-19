@@ -3,12 +3,11 @@ We're running the same service (Docker image) over a lot of different deployment
 
 To prevent services lagging behind (i.e. its code rotting) when this shouldn't be the case we need some visibility on which images the different deployments are running.
 
-## Motivation
 Introducing `krot`.
 
-By these three assumptions:
+This project relies on a few assumptions:
 
-* We havea m monolithic git repository
+* We have a monolithic git repository
 * We use git tags to keep track of the origin of our Docker image SHAs
 * We try to always run explicit SHA images for our deployments
 
