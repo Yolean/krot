@@ -69,6 +69,28 @@ function GitLocal(path) {
   }
 }
 
+function parseGitTagLog(output, sha) {
+  if (!output) return {};
+
+  const regex = /(^[0-9]*)\s{2}(.*)/;
+
+  const match = regex.exec(output);
+  if (!match) throw new Error('Failed to match output: ' + output);
+
+  const [_, timestamp, tags] = match;
+  const imageCreated = (+timestamp.trim()) * 1000;
+
+  let tag = '';
+  tags.replace(/tag:\s([^,)]+)/gi, (match, p1, offset, string) => {
+
+    if (match.indexOf(sha) !== -1) tag = p1;
+
+    return '';
+  });
+
+  return { imageCreated, tag };
+}
+
 async function run(config) {
 
   let cluster = config.cluster;
@@ -106,11 +128,22 @@ async function run(config) {
     await Promise.all(rows.map(async container => {
 
       const sha = container.image.replace(/.*@sha256:/gi, '');
-      if (!sha) return '';
+      if (!sha) return;
 
-      return await git(`log --tags --simplify-by-decoration --pretty="format:%ai %d" | grep ${sha} | awk '{ print $1 }'`)
-        // YYYY-MM-DD
-        .then(createdAt => Object.assign(container, { createdAt }));
+      const output = await git(`log --tags --simplify-by-decoration --pretty="format:%at %d" | grep ${sha}`);
+      if (!output) return;
+
+      const { imageCreated, tag } = parseGitTagLog(output, sha);
+
+      const imagePrefix = tag.replace(sha, '');
+      const outputNewest = await git(`log --tags --simplify-by-decoration --pretty="format:%at %d" | grep ${imagePrefix} | head -n 1`);
+      if (!outputNewest) return;
+
+      const parsedNewest = parseGitTagLog(outputNewest, imagePrefix);
+
+      Object.assign(container, { imageCreated, newestImageCreated: parsedNewest.imageCreated });
+
+      return Promise.resolve();
     }));
   }
 
@@ -119,22 +152,27 @@ async function run(config) {
   const now = moment();
 
   let filteredRows = rows;
-  if (config['ignore-unknown']) filteredRows = rows.filter(row => !!row.createdAt);
+  if (config['ignore-unknown']) filteredRows = rows.filter(row => !!row.imageCreated);
 
-  filteredRows.forEach(({ deployment, container, image, namespace, createdAt }) => {
+  filteredRows.forEach(({ deployment, container, image, namespace, imageCreated, newestImageCreated }) => {
     table.cell('Namespace', namespace);
     table.cell('Deployment', deployment);
     table.cell('Container Name', container);
     // table.cell('Current Image', image);
 
-    let age = 'Unknown';
-    if (createdAt) age = `${now.diff(moment(createdAt, 'YYYY-MM-DD'), 'days')} days`;
+    let age = '';
+    const mImageCreated = moment(imageCreated);
+    if (imageCreated) age = `${now.diff(mImageCreated, 'days')} days`;
 
-    table.cell('Image age', age);
+    let rot = '';
+    if (newestImageCreated) rot = `${moment(newestImageCreated).diff(mImageCreated, 'days')} days`;
+
+    table.cell('Image created', mImageCreated.format('YYYY-MM-DD'));
+    table.cell('Image rot', rot);
     table.newRow();
   });
 
-  table.sort(['Namespace', 'Image age', 'Deployment']);
+  table.sort(['Namespace', 'Image rot', 'Image age', 'Deployment']);
 
   console.log(table.toString());
 }
