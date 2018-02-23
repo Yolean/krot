@@ -19,11 +19,10 @@ function log(...args) {
   console.log(...args);
 }
 
-function Kubectl(cluster) {
-  if (!cluster) throw new Error('Word of advice: Working with multiple clusters without explicitly choosing one is bound to get you fired eventually!');
+function Kubectl() {
 
   return (cmd) => {
-    const command = `kubectl --cluster ${cluster} ${cmd} -o json`;
+    const command = `kubectl ${cmd} -o json`;
     debug('Running: ' + command);
     const child = spawn('sh', ['-c', command], { stdio: [null, 'pipe', 'inherit']})
 
@@ -93,21 +92,12 @@ function parseGitTagLog(output, sha) {
 
 async function run(config) {
 
-  let cluster = config.cluster;
-  if (!cluster) {
-    const clusters = config.clusters.split(',');
-    log('Available clusters (choose by numbering):');
-    clusters.forEach((name, idx) => log(`${idx}) ${name}`));
-    const clusterIdx = await promptly.choose('Which cluster are we checking for krot?', clusters.map((name, idx) => idx));
-    cluster = clusters[clusterIdx];
-  }
-
   const gitPath = config['git-repository'];
   let git = null;
   if (!gitPath) log('Missing git path, no git metadata will be provided!');
   else git = new GitLocal(gitPath);
 
-  const kctl = new Kubectl(cluster);
+  const kctl = new Kubectl();
 
   const deploymentData = [];
 

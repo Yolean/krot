@@ -18,7 +18,6 @@
   "dependencies": {
     "easy-table": "1.1.1",
     "moment": "2.20.1",
-    "promptly": "3.0.3",
     "rc": "1.2.5"
   },
   "devDependencies": {}

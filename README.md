@@ -20,8 +20,9 @@ A deployment not running the latest image for that service could be seen as rot,
 git clone git@github.com/Yolean/krot
 cd krot && npm install -g
 
-echo "clusters=minikube,dev-cluster,prod-cluster" >> ~/.krotrc
 echo "git-repository=/path/to/mono-repo" >> ~/.krotrc
 
-krot
+# Assuming you're using separate kube config files for different kubernetes clusters
+# Like: https://github.com/atamon/kube-cluster-alias tries to enforce
+KUBECONFIG=/home/user/.kube/prod-config krot
 ```
